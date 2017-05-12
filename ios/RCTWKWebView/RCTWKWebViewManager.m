@@ -92,6 +92,7 @@ RCT_EXPORT_METHOD(stopLoading:(nonnull NSNumber *)reactTag)
 }
 
 RCT_EXPORT_METHOD(evaluateJavaScript:(nonnull NSNumber *)reactTag
+                  fileToGlobalVar:(NSString *)fileToGlobalVar
                   js:(NSString *)js
                   resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
@@ -101,7 +102,14 @@ RCT_EXPORT_METHOD(evaluateJavaScript:(nonnull NSNumber *)reactTag
     if (![view isKindOfClass:[RCTWKWebView class]]) {
       RCTLogError(@"Invalid view returned from registry, expecting RCTWKWebView, got: %@", view);
     } else {
-      [view evaluateJavaScript:js completionHandler:^(id result, NSError *error) {
+      // Read contents of fileToGlobalVar into NSString
+      NSString *fileData = [NSString stringWithContentsOfFile:fileToGlobalVar encoding:NSUTF8StringEncoding error:nil];
+      NSString *jsprepend = @"var data=\"";
+      NSString *jsappend = @"\";";
+
+      NSString *jsToEval = [@[jsprepend, fileData, jsappend] componentsJoinedByString:@""];
+
+      [view evaluateJavaScript:jsToEval completionHandler:^(id result, NSError *error) {
         if (error) {
           reject(@"js_error", @"Error occurred while evaluating Javascript", error);
         } else {
